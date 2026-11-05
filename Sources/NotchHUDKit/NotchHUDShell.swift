@@ -38,51 +38,30 @@ public final class NotchHUDShell {
         guard let panel else { return }
 
         let target = NotchHUDLayout.islandFrame(size: size, on: screen)
-        let tucked = NotchHUDLayout.tuckedInFrame(around: target, on: screen)
-
-        panel.setFrame(tucked, display: true)
-        panel.alphaValue = 0
+        // Кадр ставим сразу. На втором экране (Sidecar) animator().setFrame
+        // остаётся в свёрнутой полоске 24pt, и плашка не читается.
+        panel.setFrame(target, display: true)
+        panel.alphaValue = 1
         panel.orderFrontRegardless()
         isVisible = true
-
-        NSAnimationContext.runAnimationGroup { ctx in
-            ctx.duration = 0.38
-            ctx.timingFunction = CAMediaTimingFunction(controlPoints: 0.16, 1.0, 0.3, 1.0)
-            panel.animator().setFrame(target, display: true)
-            panel.animator().alphaValue = 1
-        }
     }
 
     public func update(size: NSSize, on screen: NSScreen?) {
         guard let screen, isVisible, let panel else { return }
         let target = NotchHUDLayout.islandFrame(size: size, on: screen)
-        NSAnimationContext.runAnimationGroup { ctx in
-            ctx.duration = 0.22
-            ctx.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-            panel.animator().setFrame(target, display: true)
-            panel.animator().alphaValue = 1
-        }
+        panel.setFrame(target, display: true)
+        panel.alphaValue = 1
     }
 
     public func dismiss(completion: (() -> Void)? = nil) {
-        guard let panel, let screen = NSScreen.main, isVisible else {
+        guard let panel, isVisible else {
             completion?()
             return
         }
-        let tucked = NotchHUDLayout.tuckedOutFrame(from: panel.frame, on: screen)
-        NSAnimationContext.runAnimationGroup({ ctx in
-            ctx.duration = 0.28
-            ctx.timingFunction = CAMediaTimingFunction(name: .easeIn)
-            panel.animator().setFrame(tucked, display: true)
-            panel.animator().alphaValue = 0
-        }, completionHandler: {
-            DispatchQueue.main.async {
-                panel.orderOut(nil)
-                self.isVisible = false
-                panel.alphaValue = 1
-                completion?()
-            }
-        })
+        panel.orderOut(nil)
+        isVisible = false
+        panel.alphaValue = 1
+        completion?()
     }
 
     private func ensurePanel() {
